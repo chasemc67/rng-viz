@@ -220,7 +220,7 @@ class RNGVisualizerApp(App):
 
                 with Container(id="controls"):
                     yield Label(
-                        "[bold red]Press \\[Q] to Quit or Ctrl+C[/bold red] | \\[S]ave | \\[P]ause | \\[R]esume",
+                        "[bold red]Press \\[Q] to Quit or Ctrl+C[/bold red] | \\[S]tatus | \\[P]ause | \\[R]esume",
                         markup=True,
                     )
 
@@ -278,27 +278,40 @@ class RNGVisualizerApp(App):
             self.exit()
 
     async def action_save(self) -> None:
-        """Save current session."""
+        """Show current save status and file information."""
         if self.writer:
-            self.notify(
-                "Data is being saved automatically to file", title="Save Status"
-            )
+            try:
+                stats = self.analyzer.get_summary_stats() if self.analyzer else {}
+                records_written = getattr(self.writer, "records_written", 0)
+                filename = self.writer.filepath.name
+
+                message = f"File: {filename}\nRecords: {records_written:,}\nPosition: {stats.get('current_position', 0):,}"
+                self.notify(message, title="💾 Save Status - Auto-saving Active")
+            except Exception:
+                self.notify("Auto-saving active to file", title="💾 Save Status")
         else:
-            self.notify(
-                "No file writer active - restart with --live <path> to save",
-                severity="warning",
-                title="Save Status",
-            )
+            if self.is_live_mode:
+                self.notify(
+                    "No file saving - restart with: rng-viz --live ./path/",
+                    severity="warning",
+                    title="💾 Save Status",
+                )
+            else:
+                self.notify(
+                    "File playback mode - no saving needed", title="💾 Save Status"
+                )
 
     async def action_pause(self) -> None:
-        """Pause data capture."""
+        """Pause data capture or playback."""
         self.is_paused = True
-        self.notify("Data capture paused - press R to resume", title="Paused")
+        mode_text = "playback" if not self.is_live_mode else "data capture"
+        self.notify(f"{mode_text.title()} paused - press R to resume", title="⏸️ Paused")
 
     async def action_resume(self) -> None:
-        """Resume data capture."""
+        """Resume data capture or playback."""
         self.is_paused = False
-        self.notify("Data capture resumed", title="Resumed")
+        mode_text = "playback" if not self.is_live_mode else "data capture"
+        self.notify(f"{mode_text.title()} resumed", title="▶️ Resumed")
 
     def run_live_mode(
         self, save_path: Path | None = None, device_path: str | None = None
@@ -403,7 +416,9 @@ class RNGVisualizerApp(App):
 
         # Counter to throttle visualization updates
         viz_update_counter = 0
-        viz_update_frequency = 5  # Only update visualization every 5th byte
+        viz_update_frequency = (
+            10  # Only update visualization every 10th byte (2x slower)
+        )
 
         try:
             for chunk in self.device.stream_bytes(chunk_size=10):  # Smaller chunks
@@ -476,6 +491,10 @@ class RNGVisualizerApp(App):
         visualizer = self.query_one("#visualizer", BitstreamVisualizer)
         stats_display = self.query_one("#stats_display", StatsDisplay)
 
+        # Counter to throttle visualization updates (same as live mode)
+        viz_update_counter = 0
+        viz_update_frequency = 10  # Same throttling as live mode
+
         try:
             position = 0
             for record in self.reader.iter_records():
@@ -495,23 +514,28 @@ class RNGVisualizerApp(App):
                     viz_value = record.z_score / 5.0
                     viz_value = max(-1, min(1, viz_value))
 
-                # Update visualization
-                visualizer.add_data_point(viz_value, anomaly_marker)
+                # Only update visualization every few records to match live mode speed
+                viz_update_counter += 1
+                if viz_update_counter >= viz_update_frequency:
+                    # Update visualization
+                    visualizer.add_data_point(viz_value, anomaly_marker)
 
-                # Create stats display
-                position += 1
-                stats = {
-                    "current_position": position,
-                    "total_bits": position * 8,
-                    "ones_ratio": 0.5,  # Would calculate from data
-                    "byte_mean": record.byte_value,
-                    "byte_std": 0.0,
-                    "total_anomalies": 1 if record.anomaly_type else 0,
-                }
-                stats_display.update_stats(stats)
+                    # Create stats display
+                    position += 1
+                    stats = {
+                        "current_position": position,
+                        "total_bits": position * 8,
+                        "ones_ratio": 0.5,  # Would calculate from data
+                        "byte_mean": record.byte_value,
+                        "byte_std": 0.0,
+                        "total_anomalies": 1 if record.anomaly_type else 0,
+                    }
+                    stats_display.update_stats(stats)
 
-                # Control playback speed
-                await asyncio.sleep(0.25)  # Slowed down 5x from 0.05 to 0.25
+                    viz_update_counter = 0  # Reset counter
+
+                # Control playback speed (match live mode timing)
+                await asyncio.sleep(0.02)  # Same timing as live mode
 
         except Exception as e:
             self.notify(f"Playback error: {e}", severity="error")

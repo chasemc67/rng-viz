@@ -118,9 +118,9 @@ In live capture mode, you'll see:
 
 - `Q` - Quit application (graceful shutdown with file save)
 - `Ctrl+C` - Emergency quit (also performs graceful shutdown)
-- `S` - Save current session
-- `P` - Pause data capture
-- `R` - Resume data capture
+- `S` - Show status (file info, save progress, record counts)
+- `P` - Pause data capture/playback
+- `R` - Resume data capture/playback
 
 **Important**: Both `Q` and `Ctrl+C` will properly close any open capture files to prevent data corruption. The application will show shutdown progress and confirm when data has been saved safely.
 
