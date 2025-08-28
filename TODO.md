@@ -2,3 +2,4 @@
 - [] Turn this into a python web server which a UI can connect to via websockets or streaming of some kind
   - [] Create a JS ui which connects
   - [] Update the existing UI so it can connect to the server
+- [] Make sure we're always recording the raw bit-stream into the csv and any sampling is happening ontop of that
