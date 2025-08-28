@@ -4,8 +4,6 @@ from pathlib import Path
 
 import click
 
-from .ui.app import RNGVisualizerApp
-
 
 @click.command()
 @click.option(
@@ -48,6 +46,9 @@ def main(
         rng-viz --live /path/to/save.csv        # Start live capture, save to file
         rng-viz --open /path/to/existing.csv    # Open existing capture file
     """
+    # Import here to avoid loading heavy dependencies for --help
+    from .ui.app import RNGVisualizerApp
+
     app = RNGVisualizerApp()
 
     if open_file:
