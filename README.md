@@ -8,6 +8,7 @@ A Python application for capturing, analyzing, and visualizing bitstreams from t
 
 - **Live Capture**: Real-time visualization of random bitstreams with anomaly detection
 - **File Playback**: Analyze previously captured data files
+- **Game Mode**: Interactive consciousness experiment with turn-based anomaly tracking
 - **Statistical Analysis**: Multiple tests including frequency analysis, runs tests, and chi-square tests
 - **Modern Terminal UI**: Clean, responsive interface built with Textual
 - **Data Recording**: Save captures for later analysis in CSV format
@@ -99,6 +100,18 @@ rng-viz --live
 # Open existing capture file
 rng-viz --open /path/to/existing/capture.csv
 
+# Start game mode (consciousness interaction experiment)
+rng-viz --game
+
+# Start game mode with automatic saving to specific file
+rng-viz --game /path/to/save/game.csv
+
+# Start game mode with auto-generated timestamped filename
+rng-viz --game /path/to/games/                 # Creates directory if needed
+
+# Replay existing game session
+rng-viz --open-game /path/to/existing/game.csv
+
 # Specify device path manually
 rng-viz --live --device /dev/ttyACM0
 ```
@@ -116,6 +129,37 @@ In live capture mode, you'll see:
 - **Real-time Statistics**: Current analysis window statistics
 - **Device Status**: Connection and operational status
 
+### Game Mode
+
+Game mode provides an interactive consciousness experiment interface where you attempt to influence the random number generator through focused intention. The interface includes:
+
+**Game Flow:**
+
+- **Randomized Instructions**: The system randomly tells you to "Generate more 1's" or "Generate more 0's"
+- **Timed Turns**: Each turn lasts between 10-30 seconds (randomly chosen)
+- **Anomaly Tracking**: All statistical deviations are categorized into 6 buckets:
+  - **Red ▲/▼**: 99.9% confidence anomalies (\*\*\* significance) pointing up/down
+  - **Orange ▲/▼**: 99% confidence anomalies (\*\* significance) pointing up/down
+  - **Yellow ▲/▼**: 95% confidence anomalies (\* significance) pointing up/down
+
+**Game Interface:**
+
+- **Instruction Panel**: Shows current goal ("Generate more 1's" / "Generate more 0's") and countdown timer
+- **Current Turn Bucket**: Real-time scoring for the active turn (displayed prominently)
+- **Turn History**: Summary of all completed turns showing instruction and results
+- **Overall Statistics**: Combined results across all turns (shown when game is finished)
+
+**Game Controls:**
+
+- All standard controls (Q, S, P, R) work the same as live mode
+- **F** - Finish Game: End the session and display overall statistics
+
+**Hypothesis Testing:**
+The game allows you to test whether focused intention can bias the random number generator. Ideally:
+
+- When asked to "Generate more 1's", you should see more upward anomalies (▲) than downward (▼)
+- When asked to "Generate more 0's", you should see more downward anomalies (▼) than upward (▲)
+
 ### Keyboard Controls
 
 - `Q` - Quit application (graceful shutdown with file save)
@@ -123,6 +167,7 @@ In live capture mode, you'll see:
 - `S` - Show status (file info, save progress, record counts)
 - `P` - Pause data capture/playback
 - `R` - Resume data capture/playback
+- `F` - Finish Game (game mode only - end session and show overall statistics)
 
 **Important**: Both `Q` and `Ctrl+C` will properly close any open capture files to prevent data corruption. The application will show shutdown progress and confirm when data has been saved safely.
 

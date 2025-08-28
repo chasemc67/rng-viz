@@ -59,7 +59,15 @@ Create a professional-grade tool for real-time analysis of hardware random numbe
 - Comparison of different time periods or experimental conditions
 - Export of anomaly reports for statistical software
 
-**UC-3: Device Validation**
+**UC-3: Interactive Consciousness Game**
+
+- User engages in real-time consciousness interaction experiment
+- System provides randomized instructions ("Generate more 1's" or "Generate more 0's")
+- Turn-based scoring tracks anomaly distribution across 6 categories
+- Session replay capability for analysis of consciousness correlation patterns
+- Statistical analysis of intention vs. actual RNG bias
+
+**UC-4: Device Validation**
 
 - Verify TrueRNG Pro V2 is operating correctly
 - Continuous monitoring of randomness quality
@@ -122,53 +130,81 @@ Create a professional-grade tool for real-time analysis of hardware random numbe
 - **REQ-031**: Display same visualization as live mode
 - **REQ-032**: Export anomaly reports and statistics
 
+#### 3.1.7 Game Mode Functionality
+
+- **REQ-033A**: Generate random instructions ("Generate more 1's" or "Generate more 0's")
+- **REQ-033B**: Implement random turn duration between 10-30 seconds
+- **REQ-033C**: Categorize anomalies into 6 buckets (Red/Orange/Yellow × Up/Down)
+- **REQ-033D**: Track scoring per turn in real-time
+- **REQ-033E**: Maintain history of all completed turns
+- **REQ-033F**: Calculate overall statistics across all turns
+- **REQ-033G**: Support manual game completion via keyboard shortcut
+- **REQ-033H**: Enable game session replay with full game interface
+
 ### 3.2 User Interface Requirements
 
 #### 3.2.1 Command Line Interface
 
-- **REQ-033**: Support `--live` mode with optional save path
-- **REQ-034**: Support `--open` mode for file playback
-- **REQ-035**: Interactive mode selection when no arguments provided
-- **REQ-036**: `--device` parameter for manual device specification
-- **REQ-037**: `--verbose` flag for detailed logging
-- **REQ-038**: Help documentation accessible via `--help`
+- **REQ-040**: Support `--live` mode with optional save path
+- **REQ-041**: Support `--open` mode for file playback
+- **REQ-042**: Interactive mode selection when no arguments provided
+- **REQ-043**: `--device` parameter for manual device specification
+- **REQ-044**: `--verbose` flag for detailed logging
+- **REQ-045**: Help documentation accessible via `--help`
+- **REQ-046**: Support `--game` mode for consciousness interaction experiments
+- **REQ-047**: Support `--open-game` mode for game session replay
 
 #### 3.2.2 Terminal User Interface
 
-- **REQ-039**: Modern, responsive terminal UI using Textual framework
-- **REQ-040**: Clear visual hierarchy with organized panels
-- **REQ-041**: Real-time updating without screen flicker
-- **REQ-042**: Keyboard shortcuts for common actions
-- **REQ-043**: Status indicators for all major components
-- **REQ-044**: Error messages and notifications system
+- **REQ-048**: Modern, responsive terminal UI using Textual framework
+- **REQ-049**: Clear visual hierarchy with organized panels
+- **REQ-050**: Real-time updating without screen flicker
+- **REQ-051**: Keyboard shortcuts for common actions
+- **REQ-052**: Status indicators for all major components
+- **REQ-053**: Error messages and notifications system
 
 #### 3.2.3 Visualization Design
 
-- **REQ-045**: Horizontal wave visualization of bitstream
-- **REQ-046**: Baseline indicator for normal randomness
-- **REQ-047**: Anomaly markers with different symbols/colors:
+- **REQ-054**: Horizontal wave visualization of bitstream
+- **REQ-055**: Baseline indicator for normal randomness
+- **REQ-056**: Anomaly markers with different symbols/colors:
   - `***` Red for 99.9% confidence (p < 0.001)
   - `**` Yellow for 99% confidence (p < 0.01)
   - `*` Light yellow for 95% confidence (p < 0.05)
-- **REQ-048**: Smooth scrolling animation
-- **REQ-049**: Configurable visualization parameters
+- **REQ-057**: Smooth scrolling animation
+- **REQ-058**: Configurable visualization parameters
+
+#### 3.2.4 Game Mode User Interface
+
+- **REQ-059**: Display current instruction ("Generate more 1's" / "Generate more 0's") prominently
+- **REQ-060**: Show countdown timer for current turn
+- **REQ-061**: Display current turn bucket scores with visual emphasis
+- **REQ-062**: Maintain scrollable history of completed turns
+- **REQ-063**: Show overall game statistics when finished
+- **REQ-064**: Support finish game keyboard shortcut (F key)
 
 ### 3.3 Configuration and Settings
 
 #### 3.3.1 Analysis Parameters
 
-- **REQ-050**: Configurable window size (default: 1000 bytes)
-- **REQ-051**: Adjustable significance threshold (default: p < 0.01)
-- **REQ-052**: Selectable statistical tests to perform
-- **REQ-053**: Update rate configuration
-- **REQ-054**: Settings persistence between sessions
+- **REQ-065**: Configurable window size (default: 1000 bytes)
+- **REQ-066**: Adjustable significance threshold (default: p < 0.01)
+- **REQ-067**: Selectable statistical tests to perform
+- **REQ-068**: Update rate configuration
+- **REQ-069**: Settings persistence between sessions
 
 #### 3.3.2 Device Settings
 
-- **REQ-055**: TrueRNG mode selection (Normal, Raw Binary, Raw ASCII)
-- **REQ-056**: Baud rate configuration
-- **REQ-057**: USB timeout settings
-- **REQ-058**: Connection retry parameters
+- **REQ-070**: TrueRNG mode selection (Normal, Raw Binary, Raw ASCII)
+- **REQ-071**: Baud rate configuration
+- **REQ-072**: USB timeout settings
+- **REQ-073**: Connection retry parameters
+
+#### 3.3.3 Game Mode Settings
+
+- **REQ-074**: Configurable turn duration range (default: 10-30 seconds)
+- **REQ-075**: Customizable instruction set for consciousness experiments
+- **REQ-076**: Adjustable significance levels for bucket categorization
 
 ---
 
@@ -176,42 +212,42 @@ Create a professional-grade tool for real-time analysis of hardware random numbe
 
 ### 4.1 Performance
 
-- **REQ-059**: Process data in real-time without lag
-- **REQ-060**: Memory usage < 500MB for 24-hour captures
-- **REQ-061**: CPU usage < 25% on modern hardware
-- **REQ-062**: Startup time < 3 seconds
-- **REQ-063**: File loading time < 10 seconds for 1GB files
+- **REQ-077**: Process data in real-time without lag
+- **REQ-078**: Memory usage < 500MB for 24-hour captures
+- **REQ-079**: CPU usage < 25% on modern hardware
+- **REQ-080**: Startup time < 3 seconds
+- **REQ-081**: File loading time < 10 seconds for 1GB files
 
 ### 4.2 Reliability
 
-- **REQ-064**: 99.9% uptime during continuous operation
-- **REQ-065**: Graceful handling of all error conditions
-- **REQ-066**: Data integrity verification and validation
-- **REQ-067**: Automatic recovery from device disconnections
-- **REQ-068**: No data loss during normal operation
+- **REQ-082**: 99.9% uptime during continuous operation
+- **REQ-083**: Graceful handling of all error conditions
+- **REQ-084**: Data integrity verification and validation
+- **REQ-085**: Automatic recovery from device disconnections
+- **REQ-086**: No data loss during normal operation
 
 ### 4.3 Usability
 
-- **REQ-069**: Intuitive interface requiring minimal training
-- **REQ-070**: Comprehensive error messages with solutions
-- **REQ-071**: Progressive disclosure of advanced features
-- **REQ-072**: Consistent behavior across platforms
-- **REQ-073**: Accessible to users with disabilities
+- **REQ-087**: Intuitive interface requiring minimal training
+- **REQ-088**: Comprehensive error messages with solutions
+- **REQ-089**: Progressive disclosure of advanced features
+- **REQ-090**: Consistent behavior across platforms
+- **REQ-091**: Accessible to users with disabilities
 
 ### 4.4 Compatibility
 
-- **REQ-074**: Python 3.13+ support
-- **REQ-075**: Linux, macOS, and Windows compatibility
-- **REQ-076**: USB 2.0/3.0 support
-- **REQ-077**: TrueRNG Pro V2 and V3 compatibility
-- **REQ-078**: Terminal emulator compatibility
+- **REQ-092**: Python 3.13+ support
+- **REQ-093**: Linux, macOS, and Windows compatibility
+- **REQ-094**: USB 2.0/3.0 support
+- **REQ-095**: TrueRNG Pro V2 and V3 compatibility
+- **REQ-096**: Terminal emulator compatibility
 
 ### 4.5 Security
 
-- **REQ-079**: No network communication (air-gapped operation)
-- **REQ-080**: Secure file permissions for saved data
-- **REQ-081**: No logging of sensitive information
-- **REQ-082**: Input validation for all user data
+- **REQ-097**: No network communication (air-gapped operation)
+- **REQ-098**: Secure file permissions for saved data
+- **REQ-099**: No logging of sensitive information
+- **REQ-100**: Input validation for all user data
 
 ---
 
@@ -380,6 +416,7 @@ Create a professional-grade tool for real-time analysis of hardware random numbe
 - ✅ Successful device connection and data acquisition
 - ✅ Real-time statistical analysis implementation
 - ✅ Responsive and intuitive user interface
+- ✅ Game mode implementation with turn-based anomaly tracking
 - Reliable data storage and retrieval
 - Cross-platform compatibility
 
@@ -422,5 +459,6 @@ Create a professional-grade tool for real-time analysis of hardware random numbe
 
 ### 9.3 Change Log
 
+- **v1.1**: Added game mode functionality for consciousness interaction experiments
 - **v1.0**: Initial PRD creation with complete specification
 - **v0.1**: Basic project structure and requirements definition

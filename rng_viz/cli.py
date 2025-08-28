@@ -102,6 +102,17 @@ def resolve_capture_path(path: Path) -> Path:
     help="Open existing capture file for analysis",
 )
 @click.option(
+    "--game",
+    type=click.Path(path_type=Path),
+    help="Start game mode (consciousness interaction experiment), optionally saving to specified file or directory path",
+)
+@click.option(
+    "--open-game",
+    "open_game_file",
+    type=click.Path(exists=True, path_type=Path),
+    help="Open existing capture file for game mode replay",
+)
+@click.option(
     "--device",
     type=str,
     default=None,
@@ -116,6 +127,8 @@ def resolve_capture_path(path: Path) -> Path:
 def main(
     live: Path | None,
     open_file: Path | None,
+    game: Path | None,
+    open_game_file: Path | None,
     device: str | None,
     verbose: bool,
 ) -> None:
@@ -131,6 +144,10 @@ def main(
         rng-viz --live /path/to/captures/       # Auto-generate timestamped file (creates directory)
         rng-viz --live ./experiments/session1/  # Creates nested directories automatically
         rng-viz --open /path/to/existing.csv    # Open existing capture file
+        rng-viz --game                          # Start consciousness interaction game mode
+        rng-viz --game /path/to/game.csv        # Start game mode, save to specific file
+        rng-viz --game /path/to/games/          # Auto-generate timestamped game file
+        rng-viz --open-game /path/to/game.csv   # Replay existing game session
     """
     # Import here to avoid loading heavy dependencies for --help
     from .ui.app import RNGVisualizerApp
@@ -140,12 +157,21 @@ def main(
     if open_file:
         # Open existing file mode
         app.run_file_mode(open_file)
+    elif open_game_file:
+        # Open existing game file mode
+        app.run_game_file_mode(open_game_file)
     elif live is not None:
         # Live capture mode - resolve the path if provided
         resolved_live_path = None
         if live:  # If a path was provided (not just --live flag)
             resolved_live_path = resolve_capture_path(live)
         app.run_live_mode(resolved_live_path, device_path=device)
+    elif game is not None:
+        # Game mode - resolve the path if provided
+        resolved_game_path = None
+        if game:  # If a path was provided (not just --game flag)
+            resolved_game_path = resolve_capture_path(game)
+        app.run_game_mode(resolved_game_path, device_path=device)
     else:
         # Interactive mode selection
         app.run_interactive_mode(device_path=device)
