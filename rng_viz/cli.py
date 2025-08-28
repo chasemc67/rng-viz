@@ -18,39 +18,75 @@ def resolve_capture_path(path: Path) -> Path:
     Raises:
         click.ClickException: If path issues are encountered
     """
-    if path.is_dir():
-        # Generate timestamped filename in the directory
+
+    def is_directory_path(p: Path) -> bool:
+        """Check if path is intended to be a directory."""
+        # If it exists and is a directory, obviously yes
+        if p.exists() and p.is_dir():
+            return True
+
+        # If it ends with a slash, it's a directory
+        path_str = str(p)
+        if path_str.endswith("/") or path_str.endswith("\\"):
+            return True
+
+        # If it has no file extension and the name doesn't look like a filename, assume directory
+        # Common directory patterns: captures, data, experiments, etc.
+        if not p.suffix and not p.name.startswith("."):
+            return True
+
+        return False
+
+    def generate_timestamped_filename() -> str:
+        """Generate a unique timestamped filename."""
         now = datetime.now()
         timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
         microseconds = now.strftime("%f")[
             :3
         ]  # First 3 digits of microseconds (milliseconds)
-        filename = f"rng_capture_{timestamp}-{microseconds}.csv"
+        return f"rng_capture_{timestamp}-{microseconds}.csv"
+
+    if is_directory_path(path):
+        # This is intended to be a directory - create it if needed
+        if not path.exists():
+            click.echo(f"Creating directory: {path}")
+            path.mkdir(parents=True, exist_ok=True)
+
+        # Generate timestamped filename in the directory
+        filename = generate_timestamped_filename()
         resolved_path = path / filename
         click.echo(f"Auto-generating filename: {resolved_path}")
         return resolved_path
-    elif path.parent.exists() or path.suffix:
-        # Either parent directory exists, or it has a file extension (assume it's a file)
-        return path
     else:
-        # Path doesn't exist and no extension - could be intended as directory
-        if click.confirm(
-            f"Directory '{path}' doesn't exist. Create it and use auto-generated filename?"
-        ):
-            path.mkdir(parents=True, exist_ok=True)
-            now = datetime.now()
-            timestamp = now.strftime("%Y-%m-%d_%H-%M-%S")
-            microseconds = now.strftime("%f")[
-                :3
-            ]  # First 3 digits of microseconds (milliseconds)
-            filename = f"rng_capture_{timestamp}-{microseconds}.csv"
-            resolved_path = path / filename
-            click.echo(
-                f"Created directory and auto-generating filename: {resolved_path}"
-            )
-            return resolved_path
+        # This looks like a specific file path
+        if path.suffix:
+            # Has file extension - definitely a file
+            # Create parent directory if it doesn't exist
+            if not path.parent.exists():
+                click.echo(f"Creating parent directory: {path.parent}")
+                path.parent.mkdir(parents=True, exist_ok=True)
+            return path
+        elif path.parent.exists():
+            # Parent exists and no extension - treat as file in existing directory
+            return path
         else:
-            raise click.ClickException(f"Cannot resolve path: {path}")
+            # Ambiguous case - ask for clarification
+            if click.confirm(
+                f"Path '{path}' is ambiguous. Treat as directory and auto-generate filename?"
+            ):
+                path.mkdir(parents=True, exist_ok=True)
+                filename = generate_timestamped_filename()
+                resolved_path = path / filename
+                click.echo(
+                    f"Created directory and auto-generating filename: {resolved_path}"
+                )
+                return resolved_path
+            else:
+                # Treat as file path - create parent directory if needed
+                if not path.parent.exists():
+                    click.echo(f"Creating parent directory: {path.parent}")
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                return path
 
 
 @click.command()
@@ -92,7 +128,8 @@ def main(
     Examples:
         rng-viz --live                          # Start live capture with interactive mode selection
         rng-viz --live /path/to/save.csv        # Start live capture, save to specific file
-        rng-viz --live /path/to/captures/       # Start live capture, auto-generate timestamped file
+        rng-viz --live /path/to/captures/       # Auto-generate timestamped file (creates directory)
+        rng-viz --live ./experiments/session1/  # Creates nested directories automatically
         rng-viz --open /path/to/existing.csv    # Open existing capture file
     """
     # Import here to avoid loading heavy dependencies for --help

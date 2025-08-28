@@ -72,8 +72,11 @@ A Python application for capturing, analyzing, and visualizing bitstreams from t
 # Interactive mode (choose between live capture or file viewing)
 rng-viz
 
-# Start live capture with automatic saving
+# Start live capture with automatic saving to specific file
 rng-viz --live /path/to/save/capture.csv
+
+# Start live capture with auto-generated timestamped filename in directory
+rng-viz --live /path/to/captures/              # Creates directory if needed
 
 # Start live capture without saving
 rng-viz --live
@@ -107,6 +110,36 @@ In live capture mode, you'll see:
 - `R` - Resume data capture
 
 **Important**: Both `Q` and `Ctrl+C` will properly close any open capture files to prevent data corruption. The application will show shutdown progress and confirm when data has been saved safely.
+
+### Automatic Directory Creation
+
+The application intelligently handles directory paths and creates them automatically:
+
+**Directory Paths** (auto-generates timestamped filenames):
+
+```bash
+rng-viz --live ./captures/                    # Creates ./captures/ if needed
+rng-viz --live /data/experiments/session1/    # Creates full nested path
+rng-viz --live ~/consciousness_data/          # Works with home directory
+```
+
+**Generated filenames** follow the pattern: `rng_capture_YYYY-MM-DD_HH-MM-SS-mmm.csv`
+
+Example: `rng_capture_2025-08-27_20-19-57-574.csv`
+
+**Specific File Paths** (uses exact filename):
+
+```bash
+rng-viz --live ./my_experiment.csv            # Creates ./my_experiment.csv
+rng-viz --live /data/important.csv            # Creates /data/ directory if needed
+```
+
+**Smart Detection**:
+
+- Paths ending with `/` or common directory names → treated as directories
+- Paths with file extensions (`.csv`, `.txt`) → treated as specific files
+- Non-existent parent directories are created automatically
+- No user confirmation required for standard patterns
 
 ### File Format
 
