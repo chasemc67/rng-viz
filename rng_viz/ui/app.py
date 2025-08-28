@@ -75,8 +75,17 @@ class GameState:
 
     def start_new_turn(self) -> GameTurn:
         """Start a new game turn."""
-        # Randomly choose instruction and duration
-        instruction = random.choice(["Generate more 1's", "Generate more 0's"])
+        # Alternate instruction (random duration)
+        if self.current_turn is None:
+            # First turn - randomly choose starting instruction
+            instruction = random.choice(["Generate more 1's", "Generate more 0's"])
+        else:
+            # Alternate from previous turn
+            if "1's" in self.current_turn.instruction:
+                instruction = "Generate more 0's"
+            else:
+                instruction = "Generate more 1's"
+
         duration = random.uniform(10.0, 30.0)
 
         # End current turn if exists
@@ -296,10 +305,12 @@ class GameInstructionDisplay(Static):
             # Color-code the instruction
             if "1's" in turn.instruction:
                 instruction_color = "[bold cyan]"
+                close_color = "[/bold cyan]"
             else:
                 instruction_color = "[bold magenta]"
+                close_color = "[/bold magenta]"
 
-            content = f"{instruction_color}{turn.instruction}[/{instruction_color.split('[')[1]}]\n"
+            content = f"{instruction_color}{turn.instruction}{close_color}\n"
             content += f"⏰ Time left: {time_left:.1f}s"
 
         return Panel(content, title="🎯 Game Instructions")
@@ -354,20 +365,28 @@ class GameHistoryDisplay(Static):
             content = "No completed turns yet"
         else:
             lines = []
-            for i, turn in enumerate(
-                self.game_state.turn_history[-10:], 1
-            ):  # Show last 10 turns
+            total_turns = len(self.game_state.turn_history)
+            recent_turns = self.game_state.turn_history[-10:]  # Show last 10 turns
+
+            for i, turn in enumerate(recent_turns):
+                # Calculate actual turn number
+                turn_num = total_turns - len(recent_turns) + i + 1
                 scores = turn.scores
                 instruction_short = "1's" if "1's" in turn.instruction else "0's"
-                lines.append(
-                    f"Turn {i}: {instruction_short} → "
-                    f"▲{scores.total_up()} ▼{scores.total_down()}"
-                )
+                total_anomalies = scores.total()
 
-            if len(self.game_state.turn_history) > 10:
-                lines.insert(
-                    0, f"(Showing last 10 of {len(self.game_state.turn_history)} turns)"
-                )
+                if total_anomalies > 0:
+                    lines.append(
+                        f"Turn {turn_num}: {instruction_short} → "
+                        f"▲{scores.total_up()} ▼{scores.total_down()} ({total_anomalies} total)"
+                    )
+                else:
+                    lines.append(f"Turn {turn_num}: {instruction_short} → No anomalies")
+
+            if total_turns > 10:
+                lines.insert(0, f"(Showing last 10 of {total_turns} turns)")
+            elif total_turns == 0:
+                lines.append("No completed turns yet")
 
             content = "\n".join(lines)
 
@@ -388,8 +407,11 @@ class GameOverallStats(Static):
 
     def render(self) -> Panel:
         """Render overall statistics."""
-        if not self.game_state:
-            content = "No game data"
+        if not self.game_state or len(self.game_state.turn_history) == 0:
+            if self.game_state and self.game_state.is_finished:
+                content = "Game finished but no turns completed"
+            else:
+                content = "Play some turns to see overall stats"
         else:
             total_stats = self.game_state.get_overall_stats()
             total_turns = len(self.game_state.turn_history)
@@ -410,10 +432,21 @@ class GameOverallStats(Static):
             if total_stats.total() > 0:
                 up_percentage = (total_stats.total_up() / total_stats.total()) * 100
                 lines.extend(["", f"Up bias: {up_percentage:.1f}%"])
+            else:
+                lines.extend(["", "No anomalies detected yet"])
+
+            if self.game_state.is_finished:
+                lines.insert(0, "[bold green]🏆 FINAL RESULTS 🏆[/bold green]")
+                lines.insert(1, "")
 
             content = "\n".join(lines)
 
-        return Panel(content, title="🏆 Overall Results")
+        title = (
+            "🏆 Overall Results"
+            if self.game_state and self.game_state.is_finished
+            else "📊 Game Progress"
+        )
+        return Panel(content, title=title)
 
 
 class RNGVisualizerApp(App):
@@ -444,7 +477,18 @@ class RNGVisualizerApp(App):
     }
     
     #controls {
-        height: 10;
+        height: 3;
+    }
+    
+    #left_bottom {
+        height: 1fr;
+        layout: horizontal;
+        min-height: 10;
+    }
+    
+    #game_history_left {
+        width: 1fr;
+        min-height: 10;
     }
     """
 
@@ -495,6 +539,11 @@ class RNGVisualizerApp(App):
                             markup=True,
                         )
 
+                # Game-specific left bottom section
+                if self.is_game_mode:
+                    with Container(id="left_bottom"):
+                        yield GameHistoryDisplay(id="game_history_left")
+
             with Vertical(id="right_panel"):
                 yield DeviceStatus(id="device_status")
                 yield StatsDisplay(id="stats_display")
@@ -503,7 +552,7 @@ class RNGVisualizerApp(App):
                 if self.is_game_mode:
                     yield GameInstructionDisplay(id="game_instruction")
                     yield CurrentBucketDisplay(id="current_bucket")
-                    yield GameHistoryDisplay(id="game_history")
+                    yield GameOverallStats(id="game_overall")
 
         yield Footer()
 
@@ -999,9 +1048,13 @@ class RNGVisualizerApp(App):
             bucket_display = self.query_one("#current_bucket", CurrentBucketDisplay)
             bucket_display.update_game_state(self.game_state)
 
-            # Update history display
-            history_display = self.query_one("#game_history", GameHistoryDisplay)
+            # Update history display (now in left panel)
+            history_display = self.query_one("#game_history_left", GameHistoryDisplay)
             history_display.update_game_state(self.game_state)
+
+            # Update overall stats display
+            overall_display = self.query_one("#game_overall", GameOverallStats)
+            overall_display.update_game_state(self.game_state)
         except Exception:
             # Widgets might not be initialized yet
             pass
