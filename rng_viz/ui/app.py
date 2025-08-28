@@ -24,8 +24,8 @@ from ..device.truerng import TrueRNGDevice
 class BitstreamVisualizer(Static):
     """Widget for visualizing the bitstream as a scrolling wave."""
 
-    def __init__(self, width: int = 80, height: int = 10):
-        super().__init__()
+    def __init__(self, width: int = 80, height: int = 10, **kwargs):
+        super().__init__(**kwargs)
         self.width = width
         self.height = height
         self.data_points: list[float] = [0.0] * width
@@ -98,8 +98,8 @@ class BitstreamVisualizer(Static):
 class StatsDisplay(Static):
     """Widget for displaying statistical information."""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.stats = {}
 
     def update_stats(self, stats: dict) -> None:
@@ -128,8 +128,8 @@ class StatsDisplay(Static):
 class DeviceStatus(Static):
     """Widget for displaying device status."""
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.device_info = {}
 
     def update_device_info(self, device_info: dict) -> None:
@@ -343,7 +343,7 @@ class RNGVisualizerApp(App):
 
         # Schedule the setup
         self.call_later(setup_live)
-        
+
         # Start the Textual application
         self.run()
 
@@ -373,7 +373,7 @@ class RNGVisualizerApp(App):
                     pass  # UI might not be ready yet
 
         self.call_later(setup_file)
-        
+
         # Start the Textual application
         self.run()
 
