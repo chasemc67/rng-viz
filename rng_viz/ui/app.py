@@ -1,0 +1,428 @@
+"""Main Textual application for RNG Visualizer."""
+
+import asyncio
+import time
+from pathlib import Path
+
+from rich.panel import Panel
+from textual.app import App, ComposeResult
+from textual.containers import Container, Vertical
+from textual.widgets import Footer, Header, Label, Static
+
+from ..analysis.stats import RandomnessAnalyzer
+from ..data.storage import (
+    BitstreamReader,
+    BitstreamRecord,
+    BitstreamWriter,
+    create_capture_metadata,
+)
+from ..device.truerng import TrueRNGDevice
+
+
+class BitstreamVisualizer(Static):
+    """Widget for visualizing the bitstream as a scrolling wave."""
+
+    def __init__(self, width: int = 80, height: int = 10):
+        super().__init__()
+        self.width = width
+        self.height = height
+        self.data_points: list[float] = [0.0] * width
+        self.anomaly_points: list[str | None] = [None] * width
+        self.position = 0
+
+    def add_data_point(self, value: float, anomaly: str | None = None) -> None:
+        """Add a new data point to the visualization.
+
+        Args:
+            value: Normalized value (-1 to 1, where 0 is baseline)
+            anomaly: Anomaly significance marker if present
+        """
+        self.data_points.append(value)
+        self.anomaly_points.append(anomaly)
+
+        # Keep only the latest width points
+        if len(self.data_points) > self.width:
+            self.data_points.pop(0)
+            self.anomaly_points.pop(0)
+
+        self.position += 1
+        self.refresh()
+
+    def render(self) -> Panel:
+        """Render the bitstream visualization."""
+        lines = []
+
+        # Create the wave visualization
+        mid_line = self.height // 2
+
+        for row in range(self.height):
+            line_chars = []
+
+            for col, (value, anomaly) in enumerate(
+                zip(self.data_points, self.anomaly_points, strict=False)
+            ):
+                # Convert value (-1 to 1) to row position
+                value_row = mid_line - int(value * mid_line)
+
+                if row == value_row:
+                    if anomaly:
+                        # Use different characters for different significance levels
+                        char = "▲" if value > 0 else "▼"
+                        if anomaly == "***":
+                            char = f"[bold red]{char}[/bold red]"
+                        elif anomaly == "**":
+                            char = f"[bold yellow]{char}[/bold yellow]"
+                        elif anomaly == "*":
+                            char = f"[yellow]{char}[/yellow]"
+                    else:
+                        char = "━"
+                elif row == mid_line:
+                    char = "─"  # Baseline
+                else:
+                    char = " "
+
+                line_chars.append(char)
+
+            lines.append("".join(line_chars))
+
+        content = "\n".join(lines)
+        return Panel(
+            content,
+            title="RNG Bitstream Visualization",
+            subtitle=f"Position: {self.position}",
+        )
+
+
+class StatsDisplay(Static):
+    """Widget for displaying statistical information."""
+
+    def __init__(self):
+        super().__init__()
+        self.stats = {}
+
+    def update_stats(self, stats: dict) -> None:
+        """Update displayed statistics."""
+        self.stats = stats
+        self.refresh()
+
+    def render(self) -> Panel:
+        """Render the statistics display."""
+        if not self.stats:
+            content = "Waiting for data..."
+        else:
+            lines = [
+                f"Total Bits: {self.stats.get('total_bits', 0):,}",
+                f"Ones Ratio: {self.stats.get('ones_ratio', 0):.4f}",
+                f"Byte Mean: {self.stats.get('byte_mean', 0):.2f}",
+                f"Byte Std: {self.stats.get('byte_std', 0):.2f}",
+                f"Anomalies: {self.stats.get('total_anomalies', 0)}",
+                f"Position: {self.stats.get('current_position', 0):,}",
+            ]
+            content = "\n".join(lines)
+
+        return Panel(content, title="Statistics")
+
+
+class DeviceStatus(Static):
+    """Widget for displaying device status."""
+
+    def __init__(self):
+        super().__init__()
+        self.device_info = {}
+
+    def update_device_info(self, device_info: dict) -> None:
+        """Update device information."""
+        self.device_info = device_info
+        self.refresh()
+
+    def render(self) -> Panel:
+        """Render device status."""
+        if not self.device_info:
+            content = "No device connected"
+        else:
+            status = (
+                "🟢 Connected"
+                if self.device_info.get("connected")
+                else "🔴 Disconnected"
+            )
+            lines = [
+                f"Status: {status}",
+                f"Port: {self.device_info.get('port', 'Unknown')}",
+                f"Mode: {self.device_info.get('mode', 'Unknown')}",
+            ]
+            content = "\n".join(lines)
+
+        return Panel(content, title="Device Status")
+
+
+class RNGVisualizerApp(App):
+    """Main application for RNG visualization."""
+
+    CSS = """
+    Screen {
+        layout: vertical;
+    }
+    
+    #main_container {
+        layout: horizontal;
+        height: 1fr;
+    }
+    
+    #left_panel {
+        width: 1fr;
+        layout: vertical;
+    }
+    
+    #right_panel {
+        width: 30;
+        layout: vertical;
+    }
+    
+    #visualizer {
+        height: 15;
+    }
+    
+    #controls {
+        height: 10;
+    }
+    """
+
+    BINDINGS = [
+        ("q", "quit", "Quit"),
+        ("s", "save", "Save"),
+        ("p", "pause", "Pause"),
+        ("r", "resume", "Resume"),
+    ]
+
+    def __init__(self):
+        super().__init__()
+        self.device: TrueRNGDevice | None = None
+        self.analyzer: RandomnessAnalyzer | None = None
+        self.writer: BitstreamWriter | None = None
+        self.reader: BitstreamReader | None = None
+        self.is_live_mode = False
+        self.is_paused = False
+        self.capture_task: asyncio.Task | None = None
+
+    def compose(self) -> ComposeResult:
+        """Compose the application layout."""
+        yield Header()
+
+        with Container(id="main_container"):
+            with Vertical(id="left_panel"):
+                yield BitstreamVisualizer(id="visualizer")
+
+                with Container(id="controls"):
+                    yield Label("Controls: [Q]uit | [S]ave | [P]ause | [R]esume")
+
+            with Vertical(id="right_panel"):
+                yield DeviceStatus(id="device_status")
+                yield StatsDisplay(id="stats_display")
+
+        yield Footer()
+
+    def on_mount(self) -> None:
+        """Called when app is mounted."""
+        self.title = "RNG Visualizer"
+        self.sub_title = "TrueRNG Pro V2 Bitstream Analyzer"
+
+    async def action_quit(self) -> None:
+        """Quit the application."""
+        await self.cleanup()
+        self.exit()
+
+    async def action_save(self) -> None:
+        """Save current session."""
+        # Implementation would save current data
+        pass
+
+    async def action_pause(self) -> None:
+        """Pause data capture."""
+        self.is_paused = True
+
+    async def action_resume(self) -> None:
+        """Resume data capture."""
+        self.is_paused = False
+
+    def run_live_mode(
+        self, save_path: Path | None = None, device_path: str | None = None
+    ) -> None:
+        """Run in live capture mode."""
+        self.is_live_mode = True
+
+        async def setup_live():
+            try:
+                # Initialize device
+                self.device = TrueRNGDevice(port=device_path)
+                await asyncio.get_event_loop().run_in_executor(
+                    None, self.device.connect
+                )
+
+                # Initialize analyzer
+                self.analyzer = RandomnessAnalyzer(window_size=1000, sensitivity=0.01)
+
+                # Initialize writer if save path provided
+                if save_path:
+                    metadata = create_capture_metadata(
+                        device_info=self.device.get_status(),
+                        window_size=1000,
+                        sensitivity=0.01,
+                    )
+                    self.writer = BitstreamWriter(save_path, metadata)
+                    self.writer.__enter__()
+
+                # Update device status
+                device_status = self.query_one("#device_status", DeviceStatus)
+                device_status.update_device_info(self.device.get_status())
+
+                # Start capture task
+                self.capture_task = asyncio.create_task(self._capture_loop())
+
+            except Exception as e:
+                self.notify(f"Error setting up live mode: {e}", severity="error")
+
+        # Schedule the setup
+        self.call_later(setup_live)
+
+    def run_file_mode(self, file_path: Path) -> None:
+        """Run in file viewing mode."""
+        self.is_live_mode = False
+
+        async def setup_file():
+            try:
+                self.reader = BitstreamReader(file_path)
+                metadata = self.reader.load_metadata()
+
+                # Show file info
+                self.notify(f"Loaded file: {file_path.name}")
+
+                # Start playback
+                await self._playback_loop()
+
+            except Exception as e:
+                self.notify(f"Error loading file: {e}", severity="error")
+
+        self.call_later(setup_file)
+
+    def run_interactive_mode(self, device_path: str | None = None) -> None:
+        """Run in interactive mode selection."""
+        # For now, default to live mode
+        # In a full implementation, this would show a selection screen
+        self.run_live_mode(device_path=device_path)
+
+    async def _capture_loop(self) -> None:
+        """Main capture loop for live mode."""
+        if not self.device or not self.analyzer:
+            return
+
+        visualizer = self.query_one("#visualizer", BitstreamVisualizer)
+        stats_display = self.query_one("#stats_display", StatsDisplay)
+
+        try:
+            for chunk in self.device.stream_bytes(chunk_size=100):
+                if self.is_paused:
+                    await asyncio.sleep(0.1)
+                    continue
+
+                for byte_val in chunk:
+                    # Analyze byte for anomalies
+                    anomalies = self.analyzer.add_byte(byte_val)
+
+                    # Calculate visualization value
+                    # Convert byte value to normalized range (-1 to 1)
+                    viz_value = (byte_val - 127.5) / 127.5
+
+                    # Check for anomalies
+                    anomaly_marker = None
+                    if anomalies:
+                        # Use the most significant anomaly
+                        strongest = max(anomalies, key=lambda a: abs(a.z_score))
+                        anomaly_marker = strongest.significance_level
+                        viz_value = (
+                            strongest.z_score / 5.0
+                        )  # Scale z-score for visualization
+                        viz_value = max(-1, min(1, viz_value))  # Clamp to [-1, 1]
+
+                    # Update visualization
+                    visualizer.add_data_point(viz_value, anomaly_marker)
+
+                    # Update statistics
+                    stats = self.analyzer.get_summary_stats()
+                    stats_display.update_stats(stats)
+
+                    # Save to file if writer available
+                    if self.writer:
+                        record = BitstreamRecord(
+                            position=self.analyzer.position,
+                            timestamp=time.time(),
+                            byte_value=byte_val,
+                            anomaly_type=anomalies[0].test_type if anomalies else None,
+                            z_score=anomalies[0].z_score if anomalies else None,
+                            p_value=anomalies[0].p_value if anomalies else None,
+                            significance=anomalies[0].significance_level
+                            if anomalies
+                            else None,
+                        )
+                        self.writer.write_record(record)
+
+                # Small delay to control update rate
+                await asyncio.sleep(0.01)
+
+        except Exception as e:
+            self.notify(f"Capture error: {e}", severity="error")
+
+    async def _playback_loop(self) -> None:
+        """Playback loop for file mode."""
+        if not self.reader:
+            return
+
+        visualizer = self.query_one("#visualizer", BitstreamVisualizer)
+        stats_display = self.query_one("#stats_display", StatsDisplay)
+
+        try:
+            position = 0
+            for record in self.reader.iter_records():
+                if self.is_paused:
+                    await asyncio.sleep(0.1)
+                    continue
+
+                # Calculate visualization value
+                viz_value = (record.byte_value - 127.5) / 127.5
+
+                # Use recorded anomaly data
+                anomaly_marker = record.significance
+                if record.z_score is not None:
+                    viz_value = record.z_score / 5.0
+                    viz_value = max(-1, min(1, viz_value))
+
+                # Update visualization
+                visualizer.add_data_point(viz_value, anomaly_marker)
+
+                # Create stats display
+                position += 1
+                stats = {
+                    "current_position": position,
+                    "total_bits": position * 8,
+                    "ones_ratio": 0.5,  # Would calculate from data
+                    "byte_mean": record.byte_value,
+                    "byte_std": 0.0,
+                    "total_anomalies": 1 if record.anomaly_type else 0,
+                }
+                stats_display.update_stats(stats)
+
+                # Control playback speed
+                await asyncio.sleep(0.05)
+
+        except Exception as e:
+            self.notify(f"Playback error: {e}", severity="error")
+
+    async def cleanup(self) -> None:
+        """Clean up resources."""
+        if self.capture_task:
+            self.capture_task.cancel()
+
+        if self.device:
+            self.device.disconnect()
+
+        if self.writer:
+            self.writer.__exit__(None, None, None)
