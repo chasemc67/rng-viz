@@ -279,16 +279,26 @@ class RNGVisualizerApp(App):
 
     async def action_save(self) -> None:
         """Save current session."""
-        # Implementation would save current data
-        pass
+        if self.writer:
+            self.notify(
+                "Data is being saved automatically to file", title="Save Status"
+            )
+        else:
+            self.notify(
+                "No file writer active - restart with --live <path> to save",
+                severity="warning",
+                title="Save Status",
+            )
 
     async def action_pause(self) -> None:
         """Pause data capture."""
         self.is_paused = True
+        self.notify("Data capture paused - press R to resume", title="Paused")
 
     async def action_resume(self) -> None:
         """Resume data capture."""
         self.is_paused = False
+        self.notify("Data capture resumed", title="Resumed")
 
     def run_live_mode(
         self, save_path: Path | None = None, device_path: str | None = None
@@ -391,8 +401,12 @@ class RNGVisualizerApp(App):
         visualizer = self.query_one("#visualizer", BitstreamVisualizer)
         stats_display = self.query_one("#stats_display", StatsDisplay)
 
+        # Counter to throttle visualization updates
+        viz_update_counter = 0
+        viz_update_frequency = 5  # Only update visualization every 5th byte
+
         try:
-            for chunk in self.device.stream_bytes(chunk_size=100):
+            for chunk in self.device.stream_bytes(chunk_size=10):  # Smaller chunks
                 # Check for shutdown or pause
                 if self._shutting_down:
                     break
@@ -419,12 +433,17 @@ class RNGVisualizerApp(App):
                         )  # Scale z-score for visualization
                         viz_value = max(-1, min(1, viz_value))  # Clamp to [-1, 1]
 
-                    # Update visualization
-                    visualizer.add_data_point(viz_value, anomaly_marker)
+                    # Only update visualization every few bytes to slow down scrolling
+                    viz_update_counter += 1
+                    if viz_update_counter >= viz_update_frequency:
+                        # Update visualization
+                        visualizer.add_data_point(viz_value, anomaly_marker)
 
-                    # Update statistics
-                    stats = self.analyzer.get_summary_stats()
-                    stats_display.update_stats(stats)
+                        # Update statistics less frequently too
+                        stats = self.analyzer.get_summary_stats()
+                        stats_display.update_stats(stats)
+
+                        viz_update_counter = 0  # Reset counter
 
                     # Save to file if writer available
                     if self.writer:
@@ -441,8 +460,10 @@ class RNGVisualizerApp(App):
                         )
                         self.writer.write_record(record)
 
-                # Small delay to control update rate
-                await asyncio.sleep(0.05)  # Slowed down 5x from 0.01 to 0.05
+                # Small delay to control update rate (more frequent but shorter delays)
+                await asyncio.sleep(
+                    0.02
+                )  # Shorter delay since we're processing smaller chunks
 
         except Exception as e:
             self.notify(f"Capture error: {e}", severity="error")
