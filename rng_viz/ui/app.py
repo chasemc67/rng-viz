@@ -146,7 +146,7 @@ class GameState:
 class BitstreamVisualizer(Static):
     """Widget for visualizing the bitstream as a scrolling wave."""
 
-    def __init__(self, width: int = 80, height: int = 10, **kwargs):
+    def __init__(self, width: int = 70, height: int = 10, **kwargs):
         super().__init__(**kwargs)
         self.width = width
         self.height = height
@@ -463,12 +463,13 @@ class RNGVisualizerApp(App):
     }
     
     #left_panel {
-        width: 1fr;
+        width: 3fr;
         layout: vertical;
     }
     
     #right_panel {
-        width: 30;
+        width: 1fr;
+        max-width: 40;
         layout: vertical;
     }
     
