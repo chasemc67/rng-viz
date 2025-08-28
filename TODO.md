@@ -1,0 +1,4 @@
+- [] Turn it into a game, where we randomly tell the user to think about 1's or 0's and we count how many deviations in each direction happen in that bucket and then show them afterwards
+- [] Turn this into a python web server which a UI can connect to via websockets or streaming of some kind
+  - [] Create a JS ui which connects
+  - [] Update the existing UI so it can connect to the server
