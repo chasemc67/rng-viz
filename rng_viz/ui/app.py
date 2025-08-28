@@ -220,7 +220,7 @@ class RNGVisualizerApp(App):
 
                 with Container(id="controls"):
                     yield Label(
-                        "[bold red]Press [Q] to Quit or Ctrl+C[/bold red] | [S]ave | [P]ause | [R]esume",
+                        "[bold red]Press \\[Q] to Quit or Ctrl+C[/bold red] | \\[S]ave | \\[P]ause | \\[R]esume",
                         markup=True,
                     )
 
@@ -442,7 +442,7 @@ class RNGVisualizerApp(App):
                         self.writer.write_record(record)
 
                 # Small delay to control update rate
-                await asyncio.sleep(0.01)
+                await asyncio.sleep(0.05)  # Slowed down 5x from 0.01 to 0.05
 
         except Exception as e:
             self.notify(f"Capture error: {e}", severity="error")
@@ -490,7 +490,7 @@ class RNGVisualizerApp(App):
                 stats_display.update_stats(stats)
 
                 # Control playback speed
-                await asyncio.sleep(0.05)
+                await asyncio.sleep(0.25)  # Slowed down 5x from 0.05 to 0.25
 
         except Exception as e:
             self.notify(f"Playback error: {e}", severity="error")
