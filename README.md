@@ -17,6 +17,8 @@ A Python application for capturing, analyzing, and visualizing bitstreams from t
 - USB connection to host system
 - Compatible with Linux, macOS, and Windows
 
+**📋 Linux Users**: See [LINUX_SETUP.md](LINUX_SETUP.md) for complete setup instructions including VM setup on macOS.
+
 ## Installation
 
 ### Prerequisites
@@ -40,9 +42,20 @@ A Python application for capturing, analyzing, and visualizing bitstreams from t
    ```
 
 3. **Install for development** (optional):
+
    ```bash
    uv sync --group dev
    ```
+
+4. **Test installation**:
+
+   ```bash
+   uv run python test_setup.py
+   ```
+
+   This will verify that all components can be imported and basic functionality works.
+
+   **Note**: This test checks software installation but does NOT test actual device connection. Device connection requires proper permissions (see Device Setup below).
 
 ### Device Setup
 
@@ -224,6 +237,38 @@ uv run mypy rng_viz/
 ```
 
 ## Troubleshooting
+
+### Testing and Diagnosis
+
+1. **Test software installation**:
+
+   ```bash
+   uv run python test_setup.py
+   ```
+
+   This verifies imports and basic functionality work.
+
+2. **Test device connection separately**:
+
+   ```bash
+   uv run python -c "
+   from rng_viz.device.truerng import TrueRNGDevice
+   device = TrueRNGDevice()
+   try:
+       if device.connect():
+           print('✅ Device connected successfully!')
+           data = device.read_bytes(10)
+           print(f'✅ Read data: {data.hex()}')
+           device.disconnect()
+       else:
+           print('❌ Connection failed')
+   except Exception as e:
+       print(f'❌ Error: {e}')
+   "
+   ```
+
+3. **For comprehensive Linux setup help**:
+   See [LINUX_SETUP.md](LINUX_SETUP.md) for detailed troubleshooting and VM setup instructions.
 
 ### Device Connection Issues
 
