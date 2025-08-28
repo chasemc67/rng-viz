@@ -2,7 +2,8 @@
 
 A Python application for capturing, analyzing, and visualizing bitstreams from the TrueRNG Pro V2 hardware random number generator. Inspired by the Global Consciousness Project, this tool detects statistical anomalies that may indicate consciousness-related deviations in random data.
 
-<img width="2410" height="1206" alt="Screenshot 2025-08-27 at 9 27 24 PM" src="https://github.com/user-attachments/assets/971efb8a-1442-4921-9bcd-a59250e9b682" />
+<img width="3454" height="2124" alt="Screenshot 2025-08-27 at 10 24 10 PM" src="https://github.com/user-attachments/assets/d6696f51-a051-40a1-a87b-7f80ed6d09f2" />
+
 
 ## Features
 
