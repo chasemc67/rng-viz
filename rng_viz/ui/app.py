@@ -335,11 +335,11 @@ class CurrentBucketDisplay(Static):
         else:
             scores = self.game_state.current_turn.scores
             lines = [
-                f"[bold red]Red ▲: {scores.red_up}    Red ▼: {scores.red_down}[/bold red]",
-                f"[bold yellow]Org ▲: {scores.orange_up}    Org ▼: {scores.orange_down}[/bold yellow]",
-                f"[yellow]Yel ▲: {scores.yellow_up}    Yel ▼: {scores.yellow_down}[/yellow]",
+                f"[bold red]Red ▲ : {scores.red_up}    Red ▼ : {scores.red_down}[/bold red]",
+                f"[bold yellow]Org ▲ : {scores.orange_up}    Org ▼ : {scores.orange_down}[/bold yellow]",
+                f"[yellow]Yel ▲ : {scores.yellow_up}    Yel ▼ : {scores.yellow_down}[/yellow]",
                 "",
-                f"Total ▲: {scores.total_up()}  Total ▼: {scores.total_down()}",
+                f"Total ▲ : {scores.total_up()}  Total ▼ : {scores.total_down()}",
                 f"[bold]Total: {scores.total()}[/bold]",
             ]
             content = "\n".join(lines)
@@ -419,12 +419,12 @@ class GameOverallStats(Static):
             lines = [
                 f"[bold]Total Turns: {total_turns}[/bold]",
                 "",
-                f"[bold red]Red ▲: {total_stats.red_up}    Red ▼: {total_stats.red_down}[/bold red]",
-                f"[bold yellow]Org ▲: {total_stats.orange_up}    Org ▼: {total_stats.orange_down}[/bold yellow]",
-                f"[yellow]Yel ▲: {total_stats.yellow_up}    Yel ▼: {total_stats.yellow_down}[/yellow]",
+                f"[bold red]Red ▲ : {total_stats.red_up}    Red ▼ : {total_stats.red_down}[/bold red]",
+                f"[bold yellow]Org ▲ : {total_stats.orange_up}    Org ▼ : {total_stats.orange_down}[/bold yellow]",
+                f"[yellow]Yel ▲ : {total_stats.yellow_up}    Yel ▼ : {total_stats.yellow_down}[/yellow]",
                 "",
-                f"[bold]Total ▲: {total_stats.total_up()}[/bold]",
-                f"[bold]Total ▼: {total_stats.total_down()}[/bold]",
+                f"[bold]Total ▲ : {total_stats.total_up()}[/bold]",
+                f"[bold]Total ▼ : {total_stats.total_down()}[/bold]",
                 f"[bold green]Grand Total: {total_stats.total()}[/bold green]",
             ]
 
