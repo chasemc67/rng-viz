@@ -63,27 +63,13 @@ class BitstreamVisualizer(Static):
             for col, (value, anomaly) in enumerate(
                 zip(self.data_points, self.anomaly_points, strict=False)
             ):
-                # Convert value to row position
-                # Normal data: -1 to 1, Anomalies: -3 to 3 (extended range)
-                # Scale to visualization height, but clamp to available rows
-                if anomaly:
-                    # For anomalies, use wider scaling to make them more dramatic
-                    value_row = mid_line - int(value * (mid_line * 0.8))
-                else:
-                    # For normal data, use standard scaling
-                    value_row = mid_line - int(value * mid_line)
-
-                # Clamp to available row range
-                value_row = max(0, min(self.height - 1, value_row))
+                # Convert value (-1 to 1) to row position
+                value_row = mid_line - int(value * mid_line)
 
                 if row == value_row:
                     if anomaly:
-                        # Use different characters and colors for different significance levels
-                        if abs(value) > 2.0:  # Very dramatic anomalies
-                            char = "🔥" if value > 0 else "❄️"
-                        else:
-                            char = "▲" if value > 0 else "▼"
-
+                        # Use different characters for different significance levels
+                        char = "▲" if value > 0 else "▼"
                         if anomaly == "***":
                             char = f"[bold red]{char}[/bold red]"
                         elif anomaly == "**":
@@ -457,27 +443,10 @@ class RNGVisualizerApp(App):
                         # Use the most significant anomaly
                         strongest = max(anomalies, key=lambda a: abs(a.z_score))
                         anomaly_marker = strongest.significance_level
-
-                        # Make anomalies MUCH more dramatic and visually striking
-                        # This is crucial for consciousness research - deviations need to be obvious!
-                        # Scale z-score to make it very visible
-                        anomaly_scale = (
-                            strongest.z_score / 2.0
-                        )  # Divide by 2 instead of 5
-
-                        # For significant anomalies, make them go beyond normal range
-                        if abs(strongest.z_score) >= 2.0:  # 95%+ confidence
-                            # Make really significant anomalies extend beyond the normal wave
-                            # These could indicate consciousness-related influences!
-                            anomaly_scale = (
-                                strongest.z_score * 0.8
-                            )  # Much larger scaling
-
-                        viz_value = anomaly_scale
-                        # Don't clamp anomalies - let them extend beyond normal range!
-                        viz_value = max(
-                            -3, min(3, viz_value)
-                        )  # Wider range for anomalies
+                        viz_value = (
+                            strongest.z_score / 5.0
+                        )  # Scale z-score for visualization
+                        viz_value = max(-1, min(1, viz_value))  # Clamp to [-1, 1]
 
                     # Only update visualization every few bytes to slow down scrolling
                     viz_update_counter += 1
@@ -542,16 +511,8 @@ class RNGVisualizerApp(App):
                 # Use recorded anomaly data
                 anomaly_marker = record.significance
                 if record.z_score is not None:
-                    # Apply same dramatic scaling as live mode
-                    anomaly_scale = record.z_score / 2.0  # Divide by 2 instead of 5
-
-                    # For significant anomalies, make them go beyond normal range
-                    if abs(record.z_score) >= 2.0:  # 95%+ confidence
-                        anomaly_scale = record.z_score * 0.8  # Much larger scaling
-
-                    viz_value = anomaly_scale
-                    # Don't clamp anomalies - let them extend beyond normal range!
-                    viz_value = max(-3, min(3, viz_value))  # Wider range for anomalies
+                    viz_value = record.z_score / 5.0
+                    viz_value = max(-1, min(1, viz_value))
 
                 # Only update visualization every few records to match live mode speed
                 viz_update_counter += 1

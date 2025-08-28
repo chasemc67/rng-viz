@@ -106,13 +106,11 @@ rng-viz --live --device /dev/ttyACM0
 In live capture mode, you'll see:
 
 - **Bitstream Visualization**: Horizontal scrolling wave showing data flow
-- **Anomaly Detection**: Statistical deviations marked with dramatic visual indicators:
-  - `🔥`/`❄️` - Extreme anomalies (very high z-scores, extend beyond normal range)
-  - `▲`/`▼` - Significant anomalies (moderate z-scores)
-  - **Red** (`***`) - 99.9% confidence level
-  - **Yellow** (`**`) - 99% confidence level
-  - **Light yellow** (`*`) - 95% confidence level
-  - Anomalies are **scaled dramatically larger** than normal data for clear visibility
+- **Anomaly Detection**: Statistical deviations marked with symbols:
+  - `▲`/`▼` - Significant anomalies
+  - Red (`***`) - 99.9% confidence level
+  - Yellow (`**`) - 99% confidence level
+  - Light yellow (`*`) - 95% confidence level
 - **Real-time Statistics**: Current analysis window statistics
 - **Device Status**: Connection and operational status
 
