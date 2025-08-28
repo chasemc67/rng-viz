@@ -343,6 +343,9 @@ class RNGVisualizerApp(App):
 
         # Schedule the setup
         self.call_later(setup_live)
+        
+        # Start the Textual application
+        self.run()
 
     def run_file_mode(self, file_path: Path) -> None:
         """Run in file viewing mode."""
@@ -370,6 +373,9 @@ class RNGVisualizerApp(App):
                     pass  # UI might not be ready yet
 
         self.call_later(setup_file)
+        
+        # Start the Textual application
+        self.run()
 
     def run_interactive_mode(self, device_path: str | None = None) -> None:
         """Run in interactive mode selection."""
