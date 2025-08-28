@@ -382,8 +382,8 @@ class RNGVisualizerApp(App):
                 # Show file info
                 self.notify(f"Loaded file: {file_path.name}")
 
-                # Start playback
-                await self._playback_loop()
+                # Start playback task (similar to capture task in live mode)
+                self.capture_task = asyncio.create_task(self._playback_loop())
 
             except Exception as e:
                 error_msg = f"Error loading file: {e}"
