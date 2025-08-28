@@ -1,6 +1,8 @@
 """Main Textual application for RNG Visualizer."""
 
 import asyncio
+import signal
+import sys
 import time
 from pathlib import Path
 
@@ -203,6 +205,10 @@ class RNGVisualizerApp(App):
         self.is_live_mode = False
         self.is_paused = False
         self.capture_task: asyncio.Task | None = None
+        self._shutting_down = False
+
+        # Set up signal handlers for graceful shutdown
+        self._setup_signal_handlers()
 
     def compose(self) -> ComposeResult:
         """Compose the application layout."""
@@ -213,7 +219,10 @@ class RNGVisualizerApp(App):
                 yield BitstreamVisualizer(id="visualizer")
 
                 with Container(id="controls"):
-                    yield Label("Controls: [Q]uit | [S]ave | [P]ause | [R]esume")
+                    yield Label(
+                        "[bold red]Press [Q] to Quit or Ctrl+C[/bold red] | [S]ave | [P]ause | [R]esume",
+                        markup=True,
+                    )
 
             with Vertical(id="right_panel"):
                 yield DeviceStatus(id="device_status")
@@ -221,15 +230,52 @@ class RNGVisualizerApp(App):
 
         yield Footer()
 
+    def _setup_signal_handlers(self) -> None:
+        """Set up signal handlers for graceful shutdown."""
+
+        def signal_handler(signum, frame):
+            """Handle shutdown signals."""
+            if not self._shutting_down:
+                # Schedule the cleanup in the event loop
+                if hasattr(self, "_loop") and self._loop and not self._loop.is_closed():
+                    asyncio.create_task(self._graceful_shutdown())
+                else:
+                    # Fallback for immediate shutdown
+                    self._emergency_cleanup()
+                    sys.exit(0)
+
+        # Set up signal handlers for Ctrl+C and other termination signals
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
+
     def on_mount(self) -> None:
         """Called when app is mounted."""
         self.title = "RNG Visualizer"
         self.sub_title = "TrueRNG Pro V2 Bitstream Analyzer"
+        # Store reference to event loop for signal handling
+        self._loop = asyncio.get_event_loop()
 
     async def action_quit(self) -> None:
         """Quit the application."""
-        await self.cleanup()
-        self.exit()
+        await self._graceful_shutdown()
+
+    async def _graceful_shutdown(self) -> None:
+        """Perform graceful shutdown with status updates."""
+        if self._shutting_down:
+            return  # Already shutting down
+
+        self._shutting_down = True
+        self.notify("Shutting down... Please wait.", title="Stopping Capture")
+
+        try:
+            await self.cleanup()
+            self.notify(
+                "Shutdown complete. Data saved safely.", title="Shutdown Complete"
+            )
+        except Exception as e:
+            self.notify(f"Error during shutdown: {e}", severity="warning")
+        finally:
+            self.exit()
 
     async def action_save(self) -> None:
         """Save current session."""
@@ -320,6 +366,9 @@ class RNGVisualizerApp(App):
 
         try:
             for chunk in self.device.stream_bytes(chunk_size=100):
+                # Check for shutdown or pause
+                if self._shutting_down:
+                    break
                 if self.is_paused:
                     await asyncio.sleep(0.1)
                     continue
@@ -382,6 +431,9 @@ class RNGVisualizerApp(App):
         try:
             position = 0
             for record in self.reader.iter_records():
+                # Check for shutdown or pause
+                if self._shutting_down:
+                    break
                 if self.is_paused:
                     await asyncio.sleep(0.1)
                     continue
@@ -417,12 +469,45 @@ class RNGVisualizerApp(App):
             self.notify(f"Playback error: {e}", severity="error")
 
     async def cleanup(self) -> None:
-        """Clean up resources."""
-        if self.capture_task:
-            self.capture_task.cancel()
+        """Clean up resources with detailed status updates."""
+        cleanup_steps = []
 
-        if self.device:
+        if self.capture_task and not self.capture_task.done():
+            cleanup_steps.append("Stopping data capture...")
+            self.capture_task.cancel()
+            try:
+                await asyncio.wait_for(self.capture_task, timeout=2.0)
+            except (TimeoutError, asyncio.CancelledError):
+                pass  # Expected when cancelling
+
+        if self.device and self.device.is_connected:
+            cleanup_steps.append("Disconnecting from device...")
             self.device.disconnect()
 
         if self.writer:
-            self.writer.__exit__(None, None, None)
+            cleanup_steps.append("Closing capture file...")
+            try:
+                self.writer.__exit__(None, None, None)
+                cleanup_steps.append("✓ Capture file saved successfully")
+            except Exception as e:
+                cleanup_steps.append(f"⚠ Error closing file: {e}")
+
+        # Show cleanup progress if we have UI
+        if hasattr(self, "notify") and cleanup_steps:
+            for step in cleanup_steps:
+                if step.startswith("✓") or step.startswith("⚠"):
+                    self.notify(step)
+
+    def _emergency_cleanup(self) -> None:
+        """Emergency cleanup for immediate shutdown (no async)."""
+        try:
+            if self.device and self.device.is_connected:
+                self.device.disconnect()
+        except:
+            pass
+
+        try:
+            if self.writer:
+                self.writer.__exit__(None, None, None)
+        except:
+            pass
