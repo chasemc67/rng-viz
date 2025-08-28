@@ -325,7 +325,21 @@ class RNGVisualizerApp(App):
                 self.capture_task = asyncio.create_task(self._capture_loop())
 
             except Exception as e:
-                self.notify(f"Error setting up live mode: {e}", severity="error")
+                error_msg = f"Error setting up live mode: {e}"
+                print(f"❌ {error_msg}")  # Always print to console
+
+                # Also try to notify through UI if available
+                try:
+                    self.notify(error_msg, severity="error")
+                except:
+                    pass  # UI might not be ready yet
+
+                # Keep the app running to show the error
+                if "Permission denied" in str(e):
+                    print("\n💡 Fix: Add your user to the dialout group:")
+                    print("   sudo usermod -a -G dialout $USER")
+                    print("   Then logout and login again")
+                    print("\nOr try: sudo chmod 666 /dev/ttyACM0")
 
         # Schedule the setup
         self.call_later(setup_live)
@@ -346,7 +360,14 @@ class RNGVisualizerApp(App):
                 await self._playback_loop()
 
             except Exception as e:
-                self.notify(f"Error loading file: {e}", severity="error")
+                error_msg = f"Error loading file: {e}"
+                print(f"❌ {error_msg}")  # Always print to console
+
+                # Also try to notify through UI if available
+                try:
+                    self.notify(error_msg, severity="error")
+                except:
+                    pass  # UI might not be ready yet
 
         self.call_later(setup_file)
 
